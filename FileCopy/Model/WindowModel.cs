@@ -2,8 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -35,12 +37,16 @@ namespace FileCopy.Model
         private string copyCountStr = "1";
 
         private int progress = 0, progressMax = 1, copyCount = 1;
+        private State curentState = State.Idle;
 
         private void openFrom()
         {
             OpenFileDialog ofd = new();
             if (ofd.ShowDialog() == true)
+            {
                 FromPath = ofd.FileName;
+                Progress = 0;
+            }
         }
 
         private void openTo()
@@ -50,7 +56,15 @@ namespace FileCopy.Model
                 Filter = $"{Path.GetExtension(FromPath)[1..].ToUpper()} files (*{Path.GetExtension(FromPath)})|*{Path.GetExtension(FromPath)}|All files (*.*)|*.*"
             };
             if (sfd.ShowDialog() == true)
+            {
                 ToPath = sfd.FileName;
+                Progress = 0; 
+            }
+        }
+
+        private void copyFile(int index,CancellationToken token)
+        {
+            
         }
 
         private async void copy()
@@ -60,7 +74,22 @@ namespace FileCopy.Model
             tokenSource = new();
             token = tokenSource.Token;
             Progress = 0;
-            ProgressMax = copyCount;
+            //List<Task> tasks = new();
+            //for (int i = 0; i < copyCount; i++)
+            //{
+            //    int index = i;
+            //    tasks.Add(Task.Run(
+            //        () =>
+            //        {
+            //            if (token.IsCancellationRequested) return;
+            //            string newName = Path.GetFileName(toPath);
+            //            File.Copy(fromPath, index == 0 ? toPath : Path.Combine(Path.GetDirectoryName(toPath), $"Copy({index})_{newName}"), true);
+            //            //  Thread.Sleep(400);
+            //            Interlocked.Increment(ref progress);
+            //            OnPropertyChanged("Progress");
+            //        }, token));
+            //}
+            //try{await Task.WhenAll(tasks);}cath{}
             try
             {
                 await Parallel.ForEachAsync(Enumerable.Range(0, copyCount), token, async (index, tk) =>
@@ -83,8 +112,16 @@ namespace FileCopy.Model
 
         private void stop() => tokenSource?.Cancel();
 
-        private State CurentState { get; set; } = State.Idle;
-
+        private State CurentState 
+        { 
+            get => curentState;
+            set
+            {
+                curentState = value;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+      
         public string? ToPath 
         {
             get => toPath;
@@ -115,6 +152,7 @@ namespace FileCopy.Model
                 copyCountStr = value ;
                 if (!int.TryParse(copyCountStr, out copyCount) || copyCount < 1)
                     copyCountStr = "1";
+                Progress = 0;
                 OnPropertyChanged();
             }
         }
@@ -130,17 +168,7 @@ namespace FileCopy.Model
             }
         }
 
-        public int ProgressMax
-        {
-            get => progressMax;
-            set
-            {
-                progressMax= value;
-                OnPropertyChanged();
-            }
-        }
-
-        
+                
 
         public RelayCommand From => new((o) => openFrom(), (o) => CurentState == State.Idle);
 
