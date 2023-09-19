@@ -34,7 +34,7 @@ namespace FileCopy.Model
 
         private string copyCountStr = "1";
 
-        private int progress = 0, progressMax = 1, copyCount;
+        private int progress = 0, progressMax = 1, copyCount = 1;
 
         private void openFrom()
         {
@@ -65,15 +65,15 @@ namespace FileCopy.Model
             {
                 await Parallel.ForEachAsync(Enumerable.Range(0, copyCount), token, async (index, tk) =>
                 {
-                     await Task.Run(() =>
-                     {
-                         if (tk.IsCancellationRequested) return;
-                         string newName = Path.GetFileName(toPath);
-                         File.Copy(fromPath, index == 0 ? toPath : Path.Combine(Path.GetDirectoryName(toPath), $"Copy({index})_{newName}"), true);
-                       //  Thread.Sleep(400);
-                     }, tk);
-                     Interlocked.Increment(ref progress);
-                     OnPropertyChanged("Progress");
+                    await Task.Run(() =>
+                    {
+                        if (tk.IsCancellationRequested) return;
+                        string newName = Path.GetFileName(toPath);
+                        File.Copy(fromPath, index == 0 ? toPath : Path.Combine(Path.GetDirectoryName(toPath), $"Copy({index})_{newName}"), true);
+                        //  Thread.Sleep(400);
+                    }, tk);
+                    Interlocked.Increment(ref progress);
+                    OnPropertyChanged("Progress");
                 });
             }
             catch { }
