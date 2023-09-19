@@ -62,11 +62,6 @@ namespace FileCopy.Model
             }
         }
 
-        private void copyFile(int index,CancellationToken token)
-        {
-            
-        }
-
         private async void copy()
         {
             CurentState = State.Copy;
